@@ -1,3 +1,13 @@
+## Scientific image processing in C++ and Python
+
+This is a development fork of [ITK, the Insight Toolkit](https://github.com/InsightSoftwareConsortium/ITK), a toolkit for multidimensional image processing, segmentation, and registration. Upstream supplies spatially aware algorithms for scientific images, including components used to align CT and MRI data or build image-analysis pipelines in C++ and Python.
+
+**Contribution to review:** [PR #6947](https://github.com/InsightSoftwareConsortium/ITK/pull/6947) proposes using the selected macOS target architecture when choosing FFTW SIMD defaults. The proposal concerns FFTW's optional dependency build.
+
+Start with the [official documentation](https://docs.itk.org/) and [examples](https://examples.itk.org/) for installation and API usage. The original project overview, credits, and build resources follow. Review the [branch comparison](https://github.com/InsightSoftwareConsortium/ITK/compare/main...jdotc1:main) for this fork's default branch.
+
+---
+
 ![ITK - The Insight Toolkit](https://raw.githubusercontent.com/InsightSoftwareConsortium/ITK/801370c025c7d296783481779a41c6d559c992c5/Documentation/Art/itkBannerSmall.png)
 
 ITK: The Insight Toolkit
