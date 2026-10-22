@@ -1,0 +1,51 @@
+name: Focused native wrapper validation
+on:
+  push:
+    branches: [validation/native-wrappers-20261022]
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            candidate: PR_05
+            source_sha: e890f82705eca6bd9d33914e4a81d6cc0a505717
+            compiler: msvc
+          - os: windows-2022
+            candidate: PR_06
+            source_sha: e55ba1c5b7679ca5b5f7660aea1e2ff3c2fb8e7a
+            compiler: msvc
+          - os: ubuntu-24.04
+            candidate: PR_06
+            source_sha: e55ba1c5b7679ca5b5f7660aea1e2ff3c2fb8e7a
+            compiler: clang
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: validation
+      - uses: actions/checkout@v5
+        with:
+          repository: jdotc1/ITK
+          ref: ${{ matrix.source_sha }}
+          path: source
+      - name: Configure MSVC developer environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+      - uses: prefix-dev/setup-pixi@82d477f15f3a381dbcc8adc1206ce643fe110fb7
+        with:
+          manifest-path: source/pyproject.toml
+          environments: python
+      - name: Build and validate exact published source
+        working-directory: source
+        shell: bash
+        run: pixi run -e python --as-is python ../validation/native_wrapper_validation.py --candidate ${{ matrix.candidate }} --compiler ${{ matrix.compiler }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-${{ matrix.candidate }}-${{ matrix.compiler }}
+          path: source/evidence/
