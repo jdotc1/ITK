@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 from pathlib import Path
 import shlex
 import shutil
@@ -21,6 +22,11 @@ def run(name, command):
         result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
     records.append({"name": name, "command": command, "exit_code": result.returncode})
     (evidence / "commands.json").write_text(json.dumps(records, indent=2))
+    configure_details = (
+        source / "build-native" / "CMakeFiles" / "CMakeConfigureLog.yaml"
+    )
+    if configure_details.exists():
+        shutil.copy2(configure_details, evidence / "CMakeConfigureLog.yaml")
     if result.returncode:
         print((evidence / (name + ".log")).read_text(errors="replace")[-6000:])
         raise SystemExit(result.returncode)
@@ -30,6 +36,21 @@ cmake = shutil.which("cmake")
 ctest = shutil.which("ctest")
 assert cmake and ctest
 build = source / "build-native"
+# Use the Ubuntu system Clang toolchain with its own standard-library paths.
+# Pixi's Linux activation otherwise supplies flags for its GCC sysroot.
+toolchain_flags = []
+if args.compiler == "clang":
+    inherited_flags = {
+        key: os.environ.pop(key, "")
+        for key in ("CFLAGS", "CXXFLAGS", "CPPFLAGS", "LDFLAGS")
+    }
+    (evidence / "inherited-toolchain-flags.json").write_text(
+        json.dumps(inherited_flags, indent=2)
+    )
+    system_math = Path("/usr/lib/x86_64-linux-gnu/libm.so")
+    assert system_math.is_file()
+    toolchain_flags = ["-DCMath_LIBRARY=" + str(system_math)]
+
 compiler = (
     ["-DCMAKE_C_COMPILER=clang", "-DCMAKE_CXX_COMPILER=clang++"]
     if args.compiler == "clang"
@@ -59,6 +80,7 @@ run(
         + ("ITKBridgeNumPy" if args.candidate == "PR_05" else "ITKCommon")
         + "=ON",
         *compiler,
+        *toolchain_flags,
     ],
 )
 entries = json.loads((build / "compile_commands.json").read_text())
